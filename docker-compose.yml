@@ -1,0 +1,51 @@
+version: "2"
+
+services:
+    alfresco:
+        image: alfresco/alfresco-content-repository-community:6.1.2-ga
+        mem_limit: 1500m
+        environment:
+            JAVA_OPTS : "
+                -Ddb.driver=org.postgresql.Driver
+                -Ddb.username=alfresco
+                -Ddb.password=alfresco
+                -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                -Dsolr.host=solr6
+                -Dsolr.port=8983
+                -Dsolr.secureComms=none
+                -Dsolr.base.url=/solr
+                -Dindex.subsystem.name=solr6
+                -Dshare.host=localhost
+                -Dalfresco.port=8082
+                -Daos.baseUrlOverwrite=http://localhost:8082/alfresco/aos
+                -Dmessaging.subsystem.autoStart=false                
+                -Ddeployment.method=DOCKER_COMPOSE
+                -Dcsrf.filter.enabled=false
+                -Xms1g -Xmx1g
+                "
+        ports:
+            - 8082:8080 #Browser port
+        depends_on: 
+            - postgres
+
+    postgres:
+        image: postgres:10.1
+        mem_limit: 1500m
+        environment:
+            - POSTGRES_PASSWORD=alfresco
+            - POSTGRES_USER=alfresco
+            - POSTGRES_DB=alfresco
+        command: postgres -c max_connections=300 -c log_min_messages=LOG
+        ports:
+            - 5432:5432
+
+    test:
+        build:
+            context: update-properties-test
+        environment:
+            - USER=admin
+            - PASSWORD=admin
+        image: brjuliomelo/alfresco-cmis-update-pwc-problem
+        depends_on:
+            - alfresco
+            - postgres
